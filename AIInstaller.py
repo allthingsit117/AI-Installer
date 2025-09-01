@@ -1,103 +1,104 @@
 #!/usr/bin/env python3
+
 import os
-import time
 import random
-import itertools
-import threading
+import time
 import sys
 
-# Spinner for "thinking" animation
-def spinner_running(done_event):
-    for c in itertools.cycle(['|', '/', '-', '\\']):
-        if done_event.is_set():
-            break
-        sys.stdout.write(f'\r[+] Working... {c} ')
-        sys.stdout.flush()
-        time.sleep(0.1)
-    sys.stdout.write('\r[+] Done!           \n')
+thinking_bar = "[{}] {:<3} {}".format("#" * 20, "100%", "✔")
+fun_messages = [
+    "💬 Ok, so why'd the rockerboy's output kick him out of the apartment?",
+    "💬 Cause he wasn't chippin' in. Hahaa!",
+    "💬 Fun fact: Grab something to drink, this is going to be awhile.",
+    "💬 Fun fact: I have a cat.",
+    "💬 Don't worry, it hasn't frozen."
+]
 
-# Simulate progress bar
-def simulate_progress(task_name, duration=3):
+def simulate_progress(task_name, seconds=2):
     print(f"[+] {task_name}...")
-    for i in range(0, 101, 5):
-        bar = ('#' * (i // 5)).ljust(20)
-        print(f"    [{bar}] {i}%", end='\r')
-        time.sleep(duration / 20.0)
-    print(f"    [{'#' * 20}] 100% ✔\n")
+    for _ in range(seconds):
+        sys.stdout.write("\r    [")
+        for i in range(20):
+            sys.stdout.write("#")
+            sys.stdout.flush()
+            time.sleep(0.05)
+        sys.stdout.write("] 100% ✔\n")
+    time.sleep(0.5)
 
-# Show random friendly messages
-def show_friendly_messages():
-    messages = [
-        "Ok, so why'd the rockerboy's output kick him out of the apartment?",
-        "Cause he wasn't chippin' in. Hahaa!",
-        "Fun fact: Grab something to drink, this is going to be awhile.",
-        "Fun fact: I have a cat.",
-        "Don't worry, it hasn't frozen."
-    ]
-    for msg in messages:
-        time.sleep(random.randint(3, 8))
-        print(f"💬 {msg}")
-        thinking_animation(3)
-
-# Simple thinking animation after messages
-def thinking_animation(duration=3):
-    done = threading.Event()
-    t = threading.Thread(target=spinner_running, args=(done,))
-    t.start()
-    time.sleep(duration)
-    done.set()
-    t.join()
+def show_random_message():
+    message = random.choice(fun_messages)
+    print(message)
+    time.sleep(random.randint(2, 5))
+    print("[+] Done!           ")
+    print(thinking_bar)
+    time.sleep(1)
 
 def main():
+    os.system("clear")
+    print("[*] Starting AI-Installer...\n")
+    
+    # Install curl first
+    print("[+] Installing certificates and curl...")
+    simulate_progress("Installing certificates and curl", 2)
+    os.system("sudo apt update -y")
+    os.system("sudo apt install ca-certificates curl -y")
+
+    show_random_message()
+
+    # Install Ollama
     print("[+] Installing Ollama...")
     simulate_progress("Running: curl -fsSL https://ollama.com/install.sh | sh", 4)
     os.system("curl -fsSL https://ollama.com/install.sh | sh")
 
-    print("[+] Updating apt...")
-    simulate_progress("Updating apt", 2)
-    os.system("sudo apt update -y")
+    show_random_message()
 
-    print("[+] Installing certificates and curl...")
-    simulate_progress("Installing certificates and curl", 2)
-    os.system("sudo apt install ca-certificates curl -y")
-
+    # Create keyring directory
     print("[+] Creating keyring directory...")
-    simulate_progress("Creating /etc/apt/keyrings", 1)
-    os.system("sudo install -m 0755 -d /etc/apt/keyrings")
+    simulate_progress("Creating /etc/apt/keyrings", 2)
+    os.system("sudo mkdir -p /etc/apt/keyrings")
 
+    show_random_message()
+
+    # Add Docker GPG key
     print("[+] Downloading Docker GPG key...")
     simulate_progress("Downloading Docker GPG", 2)
-    os.system("curl -fsSL https://download.docker.com/linux/ubuntu/gpg | "
-              "sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg")
-    os.system("sudo chmod a+r /etc/apt/keyrings/docker.gpg")
+    os.system("curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg")
 
+    show_random_message()
+
+    # Add Docker repo
     print("[+] Adding Docker repo to sources...")
-    simulate_progress("Adding Docker repo", 1)
-    os.system('echo '
-              '"deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] '
-              'https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | '
-              'sudo tee /etc/apt/sources.list.d/docker.list > /dev/null')
+    simulate_progress("Adding Docker repo", 2)
+    os.system('echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null')
 
+    show_random_message()
+
+    # Update apt sources
     print("[+] Refreshing apt sources...")
     simulate_progress("Refreshing apt sources", 2)
     os.system("sudo apt update -y")
 
+    show_random_message()
+
+    # Install Docker
     print("[+] Installing Docker and plugins...")
-    simulate_progress("Installing Docker", 4)
+    simulate_progress("Installing Docker", 3)
     os.system("sudo apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y")
 
+    show_random_message()
+
+    # Launch Open WebUI container
     print("[+] Launching Open WebUI container...")
     simulate_progress("Launching Open WebUI container", 3)
-    show_friendly_messages()
-    os.system("sudo docker run -d -p 3000:3000 --gpus all -v ollama:/root/.ollama -v open-webui:/app/backend/data "
-              "--add-host=host.docker.internal:host-gateway --name open-webui --restart always "
-              "ghcr.io/open-webui/open-webui:main")
+    os.system("sudo docker run -d -p 3000:3000 --gpus all --name open-webui --restart always -e OLLAMA_HOST='http://host.docker.internal:11434' ghcr.io/open-webui/open-webui:main")
+
+    show_random_message()
 
     print("\n✅ All steps completed! Docker, Ollama, and Open WebUI are now running on your local server.")
     print("👉 Reminder: To run an AI model, use:")
     print("    ollama pull <your-model-name>")
-    print("    ollama run <your-model-name>\n")
-    print("🌐 Access the local WebUI at: http://localhost:3000")
+    print("    ollama run <your-model-name>")
+    print("\n🌐 Access the local WebUI at: http://localhost:3000\n")
 
 if __name__ == "__main__":
     main()
